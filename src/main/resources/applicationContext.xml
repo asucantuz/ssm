@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+        xmlns="http://www.springframework.org/schema/beans"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:tx="http://www.springframework.org/schema/tx"
+        xmlns:aop="http://www.springframework.org/schema/aop"
+        xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:p="http://www.springframework.org/schema/p" xmlns:mvc="http://www.springframework.org/schema/mvc"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.2.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.2.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+
+    <!--1、配置数据库相关参数-->
+    <context:property-placeholder location="classpath:jdbc.properties" ignore-unresolvable="true"/>
+
+    <!--2.数据源druid -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          init-method="init" destroy-method="close">
+        <property name="driverClassName" value="${jdbc.driverClassName}" />
+        <property name="url" value="${jdbc.url}" />
+        <property name="username" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}" />
+
+        <!-- 配置初始化大小、最小、最大 -->
+        <property name="initialSize" value="${druid.pool.size.init}" />
+        <property name="minIdle" value="${druid.pool.size.min}" />
+        <property name="maxActive" value="${druid.pool.size.max}" />
+
+        <!-- 配置监控统计拦截的filters，wall用于防止sql注入，stat用于统计分析 -->
+        <property name="filters" value="wall,stat" />
+    </bean>
+
+
+    <!--3、配置SqlSessionFactory对象-->
+       <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+           <!--注入数据库连接池-->
+              <property name="dataSource" ref="dataSource" />
+           <!--配置mybatis全局配置文件:mybatis-config.xml-->
+              <property name="configLocation" value="classpath:mybatis-config.xml" />
+           <!--扫描sql配置文件:mapper需要的xml文件-->
+           <property name="mapperLocations" value="classpath:mapper/*.xml"/>
+
+       </bean>
+
+    <!--4、配置扫描Dao接口包,动态实现DAO接口,注入到spring容器-->
+
+    <!-- 配置 转换器，对于在basePackage设置的包（包括子包）下的接口类 的全类名，如果在Mapper.xml文件中定义过命名空间，
+ 将被转换成spring的BEAN，在调用 的地方通过@Autowired方式将可以注入接口实例-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--注入SqlSessionFactory-->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <!-- 给出需要扫描的Dao接口-->
+        <property name="basePackage" value="com.szkingdom.ssm.dao"/>
+    </bean>
+
+
+
+
+       <!-- 配置事务管理器,管理数据源事务处理-->
+       <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+              <property name="dataSource" ref="dataSource" />
+       </bean>
+
+    <!--扫描service包(包含子包)下所有使用注解的类型-->
+    <context:component-scan base-package="com.szkingdom.ssm.service"/>
+
+    <!--配置基于注解的声明式事务,默认使用注解来管理事务行为-->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+
+
+       <!-- 配置事务通知 -->
+  <!--     <tx:advice id="advice" transaction-manager="transactionManager">
+              <tx:attributes>
+                     &lt;!&ndash; 默认只处理运行时异常，可加rollback-for="Exception/Throwable"等处理所有异常或包括错误 &ndash;&gt;
+                     <tx:method name="insert*" propagation="REQUIRED" rollback-for="Exception"/>
+                     <tx:method name="update*" propagation="REQUIRED" rollback-for="Exception"/>
+                     <tx:method name="delete*" propagation="REQUIRED" rollback-for="Exception"/>
+                     <tx:method name="*" propagation="SUPPORTS"/>
+              </tx:attributes>
+       </tx:advice>
+       &lt;!&ndash; 配置切面织入的范围,后边要把事务边界定在service层 &ndash;&gt;
+       &lt;!&ndash; 	<aop:config>
+               <aop:advisor advice-ref="advice" pointcut="execution(* cn.itcast.scm.dao.impl.*.*(..))"/>
+           </aop:config> &ndash;&gt;
+
+       &lt;!&ndash; 把事务边界定在service层 &ndash;&gt;
+       <aop:config>
+              <aop:advisor advice-ref="advice" pointcut="execution(* com.szkingdom.ssm.service.impl.*.*(..))"/>
+       </aop:config>
+       &lt;!&ndash; 自动扫描组件，要把controller去除，他们是在spring-mvc.xml中配置，如果不去除会影响事务管理。   &ndash;&gt;
+       <context:component-scan base-package="com.szkingdom">
+              <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+       </context:component-scan>
+
+
+       &lt;!&ndash; 配置SessionTemplate，已封装了繁琐的数据操作&ndash;&gt;
+       <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+              <constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory"/>
+       </bean>
+-->
+       <!-- <context:component-scan base-package="*"/> -->
+
+
+
+   <!-- redis-->
+
+    <!--&lt;!&ndash; 自动扫描注解的bean &ndash;&gt;
+    <context:component-scan base-package="com.szkingdom.ssm.service" />-->
+
+    <!-- 引入properties配置文件 -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:redis.properties</value>
+                <!--要是有多个配置文件，只需在这里继续添加即可 -->
+            </list>
+        </property>
+    </bean>
+
+    <!-- jedis 配置 -->
+    <bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig" >
+        <property name="maxIdle" value="${redis.maxIdle}" />
+        <property name="maxWaitMillis" value="${redis.maxWait}" />
+        <property name="testOnBorrow" value="${redis.testOnBorrow}" />
+    </bean >
+
+    <!-- redis服务器中心 -->
+    <bean id="connectionFactory"  class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory" >
+        <property name="poolConfig" ref="poolConfig" />
+        <property name="port" value="${redis.port}" />
+        <property name="hostName" value="${redis.host}" />
+        <!-- <property name="password" value="${redis.password}" /> -->
+        <property name="timeout" value="${redis.timeout}" ></property>
+    </bean >
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate" >
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="keySerializer" >
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer" />
+        </property>
+        <property name="valueSerializer" >
+            <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer" />
+        </property>
+    </bean >
+
+    <!-- cache配置 -->
+    <bean id="methodCacheInterceptor" class="com.szkingdom.ssm.cache.MethodCacheInterceptor" >
+        <property name="redisTemplate" ref="redisTemplate" />
+    </bean >
+
+    <!-- aop配置切点跟通知 -->
+    <bean id="methodCachePointCut" class="org.springframework.aop.support.RegexpMethodPointcutAdvisor">
+        <property name="advice" ref="methodCacheInterceptor"/>
+        <property name="pattern" value=".*ServiceImpl.*getTimestamp"/>
+    </bean>
+    <bean id="redisTestService" class="com.szkingdom.ssm.service.impl.RedisTestServiceImpl">
+    </bean>
+    <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"/>
+
+
+
+<!--quzrtz begin-->
+    <bean id="myBean" class="com.szkingdom.ssm.quartz.MyBean"></bean>
+    <bean id="anotherBean" class="com.szkingdom.ssm.quartz.AnotherBean">
+
+    </bean>
+
+
+    <!-- For times when you just need to invoke a method on a specific object -->
+    <bean id="simpleJobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="myBean" />
+        <property name="targetMethod" value="printMessage" />
+    </bean>
+
+
+    <!-- For times when you need more complex processing, passing data to the scheduled job -->
+    <bean name="complexJobDetail" 	class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="com.szkingdom.ssm.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="anotherBean" value-ref="anotherBean" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+
+
+    <!-- Run the job every 2 seconds with initial delay of 1 second -->
+    <bean id="simpleTrigger"  class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+        <property name="jobDetail" ref="simpleJobDetail" />
+        <property name="startDelay" value="1000" />
+        <property name="repeatInterval" value="2000" />
+    </bean>
+
+
+    <!-- Run the job every 5 seconds only on weekends -->
+    <bean id="cronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetail" />
+        <property name="cronExpression" value="0/5 * * ? * SAT-SUN" />
+    </bean>
+
+
+    <!-- Scheduler factory bean to glue together jobDetails and triggers to Configure Quartz Scheduler -->
+    <bean  class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="jobDetails">
+            <list>
+                <ref bean="simpleJobDetail" />
+                <ref bean="complexJobDetail" />
+            </list>
+        </property>
+
+        <property name="triggers">
+            <list>
+                <ref bean="simpleTrigger" />
+                <ref bean="cronTrigger" />
+            </list>
+        </property>
+    </bean>
+
+
+
+
+
+
+
+
+
+   <!-- <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+                <property name="connectionFactory" ref="connectionFactory"/>
+            </bean>
+        <bean id="connectionFactory" class="org.springframework.jms.connection.SingleConnectionFactory">
+            <property name="targetConnectionFactory" ref="targetConnectionFactory"/>
+        </bean>
+        <bean id="targetConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+            <property name="brokerURL" value="tcp://localhost:61616"/>
+        </bean>
+    &lt;!&ndash; As JMSAppender only support the topic way to send messages,
+         thus queueDestination here is useless.
+        <bean id="queueDestination" class="org.apache.activemq.command.ActiveMQQueue">
+            <constructor-arg name="name" value="queue" />
+        </bean>
+     &ndash;&gt;
+        <bean id="topicDestination" class="org.apache.activemq.command.ActiveMQTopic">
+            <constructor-arg name="name" value="logTopic" />
+        </bean>
+        <bean id="jmsContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+            <property name="connectionFactory" ref="connectionFactory" />
+             &lt;!&ndash; <property name="destination" ref="queueDestination" />  &ndash;&gt;
+             <property name="destination" ref="topicDestination" />
+             <property name="messageListener" ref="logMessageListener" />
+        </bean>
+        <bean id="logMessageListener" class="com.szkingdom.ssm.logging.LogMessageListener"/>-->
+
+
+<!--Interceptor测试-->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/hello"/>
+            <bean class="com.szkingdom.ssm.interceptor.MyInterceptor"></bean>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+
+  <!--  activityMq-->
+
+   <!-- <bean id="connectionFactory1" class="org.springframework.jms.connection.SingleConnectionFactory">
+
+
+    </bean>
+
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate" >
+        <constructor-arg>
+
+        </constructor-arg>
+    </bean>-->
+
+
+    <bean id="multipartResolver"
+          class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <!-- set the max upload size100MB -->
+        <property name="maxUploadSize">
+            <value>104857600</value>
+        </property>
+        <property name="maxInMemorySize">
+            <value>4096</value>
+        </property>
+    </bean>
+
+
+
+</beans>
